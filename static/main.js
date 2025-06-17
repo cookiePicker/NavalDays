@@ -1,21 +1,26 @@
-let isHost = location.search.includes("creator=1");
+const socket = io();
+const urlParams = new URLSearchParams(window.location.search);
+const ROOM_ID = urlParams.get("id");
+const isHost = urlParams.get("creator") === "1";
+
+let pos = { x: -0.5, y: -0.5 };
 let peerConnections = {};
 let dataChannels = {};
-let localID = null;
-let pos = { x: -0.5, y: -0.5 };
 
-const socket = io();
-const ROOM_ID = new URLSearchParams(location.search).get("id");
+// Присоединяемся к комнате
 socket.emit("join", { room: ROOM_ID });
 
+// Получаем список участников и создаём соединения
 socket.on("peers", (peerIds) => {
-  peerIds.forEach(createOffer);
+  peerIds.forEach((id) => createPeer(id, true));
 });
 
+// Новый участник присоединился — создаём соединение
 socket.on("new-peer", (id) => {
-  createOffer(id);
+  createPeer(id, true);
 });
 
+// Обработка сигнала от другого клиента
 socket.on("signal", async ({ from, signal }) => {
   let pc = peerConnections[from];
   if (!pc) pc = await createPeer(from, false);
@@ -32,8 +37,12 @@ socket.on("signal", async ({ from, signal }) => {
   }
 });
 
+// Создание WebRTC peer соединения
 async function createPeer(id, isOfferer) {
-  const pc = new RTCPeerConnection();
+  const pc = new RTCPeerConnection({
+    iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
+  });
+
   peerConnections[id] = pc;
 
   if (isOfferer) {
@@ -48,8 +57,9 @@ async function createPeer(id, isOfferer) {
   }
 
   pc.onicecandidate = (e) => {
-    if (e.candidate)
+    if (e.candidate) {
       socket.emit("signal", { to: id, signal: { candidate: e.candidate } });
+    }
   };
 
   if (isOfferer) {
@@ -61,29 +71,41 @@ async function createPeer(id, isOfferer) {
   return pc;
 }
 
+// Обработка приёма и отправки данных
 function setupDataChannel(dc, id) {
   dc.onmessage = (event) => {
-    const data = JSON.parse(event.data);
-    if (data.type === "pos") {
-      WebGLApp.setPosition(data.x, data.y);
+    try {
+      const data = JSON.parse(event.data);
+      if (data.type === "pos" && typeof WebGLApp !== "undefined") {
+        WebGLApp.setPosition(data.x, data.y);
+      }
+    } catch (e) {
+      console.error("Ошибка при обработке сообщения:", e);
     }
   };
 }
 
-// HOST управляет и отправляет координаты
+// Обработка клавиш — только для хоста
 document.addEventListener("keydown", (e) => {
   if (!isHost) return;
-  if (e.key === "w") pos.y += 0.05;
-  if (e.key === "s") pos.y -= 0.05;
-  if (e.key === "a") pos.x -= 0.05;
-  if (e.key === "d") pos.x += 0.05;
 
-  WebGLApp.setPosition(pos.x, pos.y);
+  switch (e.key) {
+    case "w": pos.y += 0.05; break;
+    case "s": pos.y -= 0.05; break;
+    case "a": pos.x -= 0.05; break;
+    case "d": pos.x += 0.05; break;
+    default: return;
+  }
 
-  const msg = JSON.stringify({ type: "pos", x: pos.x, y: pos.y });
+  if (typeof WebGLApp !== "undefined") {
+    WebGLApp.setPosition(pos.x, pos.y);
+  }
+
+  const message = JSON.stringify({ type: "pos", x: pos.x, y: pos.y });
+
   for (let id in dataChannels) {
     if (dataChannels[id].readyState === "open") {
-      dataChannels[id].send(msg);
+      dataChannels[id].send(message);
     }
   }
 });

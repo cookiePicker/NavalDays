@@ -15,15 +15,19 @@
   <script src="webgl.js"></script>
   <script src="main.js"></script>
 
-  <script>
+<script>
+  window.onload = function () {
     const urlParams = new URLSearchParams(window.location.search);
     const roomId = urlParams.get("id");
     const isCreator = urlParams.get("creator") === "1";
 
-    document.getElementById("roomHeader").innerText = "Room " + roomId;
-    document.getElementById("roleMsg").innerText = isCreator
-      ? "You've created this room"
-      : "You've joined this room";
-  </script>
+    const header = document.getElementById("roomHeader");
+    if (header) header.innerText = "Room " + roomId;
+
+    const msg = document.getElementById("roleMsg");
+    if (msg) msg.innerText = isCreator ? "You've created this room" : "You've joined this room";
+  };
+</script>
+
 </body>
 </html>
