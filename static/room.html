@@ -16,19 +16,28 @@
   <script src="/webgl.js"></script>
 
   <script>
-    const params = new URLSearchParams(location.search);
-    const roomId = params.get("id");
-    const isCreator = params.get("creator") === "1";
+  // Извлекаем параметры из URL
+  const params = new URLSearchParams(location.search);
+  const roomId = params.get("id");
+  const isCreator = params.get("creator") === "1"; // Проверка на создателя комнаты
 
-    document.getElementById("roomHeader").innerText = `Room ${roomId}`;
-    document.getElementById("roleMsg").innerText = isCreator
-      ? "You are the host of this room."
-      : "You joined the room.";
+  // Обновляем текст в элементах на странице
+  document.getElementById("roomHeader").innerText = `Room ${roomId}`;
+  document.getElementById("roleMsg").innerText = isCreator
+    ? "You are the host of this room."
+    : "You joined the room.";
 
-    // Подключение нужного main.js
-    const roleScript = document.createElement("script");
-    roleScript.src = isCreator ? "/main_host.js" : "/main_client.js";
-    document.body.appendChild(roleScript);
+  // Определяем путь к нужному скрипту в зависимости от роли
+  const scriptPath = isCreator ? "/main_host.js" : "/main_client.js";
+
+  // Проверка, был ли уже добавлен нужный скрипт
+  if (!document.querySelector(`script[src='${scriptPath}']`)) {
+    const scriptElement = document.createElement("script");
+    scriptElement.src = scriptPath;  // Устанавливаем путь к скрипту
+    scriptElement.async = true; // Делаем скрипт асинхронным
+    document.body.appendChild(scriptElement); // Добавляем скрипт на страницу
+  }
   </script>
+
 </body>
 </html>
