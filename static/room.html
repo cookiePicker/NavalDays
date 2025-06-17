@@ -2,32 +2,33 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>Room {{ROOM_ID}}</title>
-  <link rel="stylesheet" href="style.css">
+  <title>Room</title>
+  <link rel="stylesheet" href="/style.css">
 </head>
 <body>
-  <h1>Room {{ROOM_ID}}</h1>
+  <h1 id="roomHeader">Room</h1>
   <p id="roleMsg"></p>
-  
-  <!-- WebGL Canvas -->
+
   <canvas id="webglCanvas" width="400" height="400"></canvas>
+
+  <!-- Socket.IO CDN -->
   <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
-  <script src="webgl.js"></script>
-  <script src="main.js"></script>
+  <script src="/webgl.js"></script>
 
-<script>
-  window.onload = function () {
-    const urlParams = new URLSearchParams(window.location.search);
-    const roomId = urlParams.get("id");
-    const isCreator = urlParams.get("creator") === "1";
+  <script>
+    const params = new URLSearchParams(location.search);
+    const roomId = params.get("id");
+    const isCreator = params.get("creator") === "1";
 
-    const header = document.getElementById("roomHeader");
-    if (header) header.innerText = "Room " + roomId;
+    document.getElementById("roomHeader").innerText = `Room ${roomId}`;
+    document.getElementById("roleMsg").innerText = isCreator
+      ? "You are the host of this room."
+      : "You joined the room.";
 
-    const msg = document.getElementById("roleMsg");
-    if (msg) msg.innerText = isCreator ? "You've created this room" : "You've joined this room";
-  };
-</script>
-
+    // Подключение нужного main.js
+    const roleScript = document.createElement("script");
+    roleScript.src = isCreator ? "/main_host.js" : "/main_client.js";
+    document.body.appendChild(roleScript);
+  </script>
 </body>
 </html>
