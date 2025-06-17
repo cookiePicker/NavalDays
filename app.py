@@ -1,11 +1,12 @@
-from flask import Flask, request, send_from_directory, render_template_string, abort, render_template
+from flask import Flask, request, send_from_directory, abort
+from flask_socketio import SocketIO, emit, join_room
 import os
 
 app = Flask(__name__)
+socketio = SocketIO(app, cors_allowed_origins="*")
 
 # Пути
 STATIC_FOLDER = "static"
-TEMPLATE_ROOM = "templates/room.html"
 
 # MIME-тип по расширению
 def get_mime_type(filename):
@@ -27,6 +28,7 @@ def static_files(filename):
     if os.path.exists(full_path):
         return send_from_directory(STATIC_FOLDER, filename, mimetype=get_mime_type(filename))
     abort(404)
+
 @app.route("/create-room")
 def create_room():
     room_id = request.args.get("id")
@@ -34,24 +36,45 @@ def create_room():
         return "Не указан ID", 400
 
     room_path = f"rooms/{room_id}.json"
-
     if os.path.exists(room_path):
         return "Комната уже существует", 409  # Конфликт
 
-    # Создаем файл комнаты (может быть пустым или с начальной структурой)
+    os.makedirs("rooms", exist_ok=True)
     with open(room_path, "w") as f:
-          f.write(f'{{"id": "{room_id}", "members": 0, "owner": "none"}}')
-    return render_template("room.html", room_id=room_id)
+        f.write(f'{{"id": "{room_id}", "members": 0, "owner": "none"}}')
+
+    return send_from_directory(STATIC_FOLDER, "room.html")
+
 @app.route("/join-room")
-def join_room():
+def join_room_route():
     room_id = request.args.get("id")
     if not room_id:
         abort(400, "Room ID is required")
-    
+
     room_path = os.path.join("rooms", f"{room_id}.json")
     if not os.path.exists(room_path):
         abort(404, "Комната не найдена")
 
-    return render_template("room.html", room_id=room_id)
+    return send_from_directory(STATIC_FOLDER, "room.html")
+
+# WebSocket Events
+@socketio.on("join")
+def handle_join(data):
+    room = data["room"]
+    join_room(room)
+    emit("new-peer", request.sid, room=room, include_self=False)
+
+    peer_ids = [
+        sid for sid in socketio.server.manager.rooms["/"].get(room, [])
+        if sid != request.sid
+    ]
+    emit("peers", peer_ids)
+
+@socketio.on("signal")
+def handle_signal(data):
+    to = data["to"]
+    signal = data["signal"]
+    emit("signal", {"from": request.sid, "signal": signal}, room=to)
+
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=80)
+    socketio.run(app, host="0.0.0.0", port=80)
