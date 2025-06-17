@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Room</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <h1>Room {{ROOM_ID}}</h1>
+  <p id="roleMsg"></p>
+  <script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const isCreator = urlParams.get('creator') === '1';
+    const msg = isCreator ? "You've created this room" : "You've joined this room";
+    document.getElementById("roleMsg").innerText = msg;
+  </script>
+</body>
+</html>
