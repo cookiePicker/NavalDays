@@ -1,64 +1,70 @@
-// webgl.js
+window.WebGLApp = (function () {
+  const canvas = document.createElement("canvas");
+  document.body.appendChild(canvas);
+  canvas.width = 400;
+  canvas.height = 400;
+  const ctx = canvas.getContext("webgl");
 
-function initializeWebGL() {
-    // Получаем элемент canvas для рендеринга
-    const canvas = document.getElementById("webglCanvas");
-    const gl = canvas.getContext("webgl");
+  if (!ctx) {
+    alert("WebGL не поддерживается");
+    return;
+  }
 
-    if (!gl) {
-        console.error("WebGL не поддерживается в этом браузере.");
-        return;
+  const vertexShaderSource = `
+    attribute vec2 a_position;
+    void main() {
+      gl_Position = vec4(a_position, 0, 1);
     }
+  `;
+  const fragmentShaderSource = `
+    void main() {
+      gl_FragColor = vec4(1, 0, 0, 1);
+    }
+  `;
 
-    // Очищаем экран
-    gl.clearColor(0.0, 0.0, 0.0, 1.0);
-    gl.clear(gl.COLOR_BUFFER_BIT);
+  function compileShader(type, source) {
+    const shader = ctx.createShader(type);
+    ctx.shaderSource(shader, source);
+    ctx.compileShader(shader);
+    return shader;
+  }
 
-    // Пример простого квадрата
+  const vs = compileShader(ctx.VERTEX_SHADER, vertexShaderSource);
+  const fs = compileShader(ctx.FRAGMENT_SHADER, fragmentShaderSource);
+  const program = ctx.createProgram();
+  ctx.attachShader(program, vs);
+  ctx.attachShader(program, fs);
+  ctx.linkProgram(program);
+  ctx.useProgram(program);
+
+  const positionBuffer = ctx.createBuffer();
+  const positionLocation = ctx.getAttribLocation(program, "a_position");
+
+  function draw(x, y) {
+    const size = 0.2;
     const vertices = new Float32Array([
-        -0.5,  0.5, 0.0,
-        -0.5, -0.5, 0.0,
-         0.5, -0.5, 0.0,
-         0.5,  0.5, 0.0
+      x, y,
+      x + size, y,
+      x, y + size,
+      x, y + size,
+      x + size, y,
+      x + size, y + size
     ]);
 
-    const vertexBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
+    ctx.bindBuffer(ctx.ARRAY_BUFFER, positionBuffer);
+    ctx.bufferData(ctx.ARRAY_BUFFER, vertices, ctx.STATIC_DRAW);
+    ctx.enableVertexAttribArray(positionLocation);
+    ctx.vertexAttribPointer(positionLocation, 2, ctx.FLOAT, false, 0, 0);
 
-    // Шейдеры
-    const vertCode = `
-        attribute vec3 coordinates;
-        void main(void) {
-            gl_Position = vec4(coordinates, 1.0);
-        }
-    `;
-    const fragCode = `
-        void main(void) {
-            gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0); // красный цвет
-        }
-    `;
+    ctx.viewport(0, 0, canvas.width, canvas.height);
+    ctx.clearColor(0.2, 0.2, 0.2, 1);
+    ctx.clear(ctx.COLOR_BUFFER_BIT);
+    ctx.drawArrays(ctx.TRIANGLES, 0, 6);
+  }
 
-    const vertShader = gl.createShader(gl.VERTEX_SHADER);
-    gl.shaderSource(vertShader, vertCode);
-    gl.compileShader(vertShader);
-
-    const fragShader = gl.createShader(gl.FRAGMENT_SHADER);
-    gl.shaderSource(fragShader, fragCode);
-    gl.compileShader(fragShader);
-
-    // Создаем программу
-    const shaderProgram = gl.createProgram();
-    gl.attachShader(shaderProgram, vertShader);
-    gl.attachShader(shaderProgram, fragShader);
-    gl.linkProgram(shaderProgram);
-    gl.useProgram(shaderProgram);
-
-    // Привязываем буфер данных к шейдерам
-    const coord = gl.getAttribLocation(shaderProgram, "coordinates");
-    gl.vertexAttribPointer(coord, 3, gl.FLOAT, false, 0, 0);
-    gl.enableVertexAttribArray(coord);
-
-    // Рисуем квадрат
-    gl.drawArrays(gl.TRIANGLE_FAN, 0, 4);
-}
+  return {
+    setPosition: function (x, y) {
+      draw(x, y);
+    }
+  };
+})();
