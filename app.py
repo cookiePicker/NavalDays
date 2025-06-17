@@ -6,6 +6,7 @@ app = Flask(__name__)
 # Пути
 STATIC_FOLDER = "static"
 TEMPLATE_ROOM = "templates/room.html"
+Rooms = []
 
 # MIME-тип по расширению
 def get_mime_type(filename):
