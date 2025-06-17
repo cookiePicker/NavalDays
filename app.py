@@ -1,21 +1,42 @@
-from flask import Flask, render_template
+from flask import Flask, request, send_from_directory, render_template_string, abort
+import os
 
 app = Flask(__name__)
 
-# Home route - this is where the main logic happens
-@app.route('/')
-def home():
-    # Python logic to generate dynamic content
-    title = "Healthy Lifestyle"
-    message = "Welcome to the Healthy Lifestyle Project"
-    authors = ["Timo", "Alba", "Hugo", "Alejandro"]
-    
-    # Image filename to display
-    image_filename = 'images/prj_img.png'
-    image_filename2 = 'images/negr.jpeg'
+# Пути
+STATIC_FOLDER = "static"
+TEMPLATE_ROOM = "templates/room.html"
 
-    # Render the HTML file with variables passed from Python
-    return render_template('index.html', title=title, message=message, authors=authors, image_filename=image_filename,image_filename2 = image_filename2)
+# MIME-тип по расширению
+def get_mime_type(filename):
+    if filename.endswith(".html"):
+        return "text/html"
+    elif filename.endswith(".js"):
+        return "application/javascript"
+    elif filename.endswith(".css"):
+        return "text/css"
+    return "application/octet-stream"
+
+@app.route("/")
+def index():
+    return send_from_directory(STATIC_FOLDER, "index.html")
+
+@app.route("/<path:filename>")
+def static_files(filename):
+    full_path = os.path.join(STATIC_FOLDER, filename)
+    if os.path.exists(full_path):
+        return send_from_directory(STATIC_FOLDER, filename, mimetype=get_mime_type(filename))
+    abort(404)
+
+@app.route("/create-room")
+@app.route("/join-room")
+def room_handler():
+    room_id = request.args.get("id", "undefined")
+    if os.path.exists(TEMPLATE_ROOM):
+        with open(TEMPLATE_ROOM) as f:
+            template = f.read()
+        return render_template_string(template.replace("{{ROOM_ID}}", room_id))
+    return "Room template not found", 500
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=80)  # Makes it accessible in the local network
+    app.run(host="0.0.0.0", port=80)
