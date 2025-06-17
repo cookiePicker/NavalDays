@@ -58,15 +58,5 @@ def join_room():
         abort(404, "Комната не найдена")
 
     return render_template("room.html", room_id=room_id)
-@app.route("/create-room")
-@app.route("/join-room")
-def room_handler():
-    room_id = request.args.get("id", "undefined")
-    if os.path.exists(TEMPLATE_ROOM):
-        with open(TEMPLATE_ROOM) as f:
-            template = f.read()
-        return render_template_string(template.replace("{{ROOM_ID}}", room_id))
-    return "Room template not found", 500
-
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=80)
