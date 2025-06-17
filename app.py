@@ -1,4 +1,4 @@
-from flask import Flask, request, send_from_directory, render_template_string, abort
+from flask import Flask, request, send_from_directory, render_template_string, abort, render_template
 import os
 
 app = Flask(__name__)
@@ -27,11 +27,6 @@ def static_files(filename):
     if os.path.exists(full_path):
         return send_from_directory(STATIC_FOLDER, filename, mimetype=get_mime_type(filename))
     abort(404)
-import os
-from flask import Flask, request, render_template
-
-app = Flask(__name__)
-
 @app.route("/create-room")
 def create_room():
     room_id = request.args.get("id")
