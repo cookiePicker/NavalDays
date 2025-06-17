@@ -15,11 +15,17 @@
   <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
   <script src="/webgl.js"></script>
 
-  <script>
+ <script>
   // Извлекаем параметры из URL
   const params = new URLSearchParams(location.search);
   const roomId = params.get("id");
   const isCreator = params.get("creator") === "1"; // Проверка на создателя комнаты
+
+  // Проверяем, была ли уже объявлена переменная roomId
+  if (typeof roomId === "undefined" || roomId === null) {
+    console.error("Room ID не задан!");
+    return;
+  }
 
   // Обновляем текст в элементах на странице
   document.getElementById("roomHeader").innerText = `Room ${roomId}`;
@@ -37,7 +43,8 @@
     scriptElement.async = true; // Делаем скрипт асинхронным
     document.body.appendChild(scriptElement); // Добавляем скрипт на страницу
   }
-  </script>
+</script>
+
 
 </body>
 </html>
