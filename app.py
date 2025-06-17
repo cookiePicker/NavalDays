@@ -27,7 +27,37 @@ def static_files(filename):
     if os.path.exists(full_path):
         return send_from_directory(STATIC_FOLDER, filename, mimetype=get_mime_type(filename))
     abort(404)
+import os
+from flask import Flask, request, render_template
 
+app = Flask(__name__)
+
+@app.route("/create-room")
+def create_room():
+    room_id = request.args.get("id")
+    if not room_id:
+        return "Не указан ID", 400
+
+    room_path = f"rooms/{room_id}.json"
+
+    if os.path.exists(room_path):
+        return "Комната уже существует", 409  # Конфликт
+
+    # Создаем файл комнаты (может быть пустым или с начальной структурой)
+    with open(room_path, "w") as f:
+          f.write(f'{{"id": "{room_id}", "members": 0, "owner": "none"}}')
+    return render_template("room.html", room_id=room_id)
+@app.route("/join-room")
+def join_room():
+    room_id = request.args.get("id")
+    if not room_id:
+        abort(400, "Room ID is required")
+    
+    room_path = os.path.join("rooms", f"{room_id}.json")
+    if not os.path.exists(room_path):
+        abort(404, "Комната не найдена")
+
+    return render_template("room.html", room_id=room_id)
 @app.route("/create-room")
 @app.route("/join-room")
 def room_handler():
