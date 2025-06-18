@@ -9,42 +9,31 @@
   <h1 id="roomHeader">Room</h1>
   <p id="roleMsg"></p>
 
-  <canvas id="webglCanvas" width="400" height="400"></canvas>
+  <input id="msgInput" placeholder="Type something..." style="width:100%;padding:8px;" />
+  <div id="msgView" style="white-space:pre-wrap;padding:8px;border:1px solid #ccc;margin-top:10px;"></div>
 
-  <!-- Socket.IO CDN -->
+  <!-- Подключения -->
   <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
-  <script src="/webgl.js"></script>
 
- <script>
-  // Извлекаем параметры из URL
-  const params = new URLSearchParams(location.search);
-  const roomId = params.get("id");
-  const isCreator = params.get("creator") === "1"; // Проверка на создателя комнаты
+  <script>
+    const params = new URLSearchParams(location.search);
+    const roomId = params.get("id");
+    const isCreator = params.get("creator") === "1";
 
-  // Проверяем, была ли уже объявлена переменная roomId
-  if (typeof roomId === "undefined" || roomId === null) {
-    console.error("Room ID не задан!");
-    return;
-  }
+    if (!roomId) {
+      alert("Room ID is missing!");
+      throw new Error("Missing room ID.");
+    }
 
-  // Обновляем текст в элементах на странице
-  document.getElementById("roomHeader").innerText = `Room ${roomId}`;
-  document.getElementById("roleMsg").innerText = isCreator
-    ? "You are the host of this room."
-    : "You joined the room.";
+    document.getElementById("roomHeader").innerText = `Room ${roomId}`;
+    document.getElementById("roleMsg").innerText = isCreator
+      ? "You are the host of this room."
+      : "You joined the room.";
 
-  // Определяем путь к нужному скрипту в зависимости от роли
-  const scriptPath = isCreator ? "/main_host.js" : "/main_client.js";
-
-  // Проверка, был ли уже добавлен нужный скрипт
-  if (!document.querySelector(`script[src='${scriptPath}']`)) {
-    const scriptElement = document.createElement("script");
-    scriptElement.src = scriptPath;  // Устанавливаем путь к скрипту
-    scriptElement.async = true; // Делаем скрипт асинхронным
-    document.body.appendChild(scriptElement); // Добавляем скрипт на страницу
-  }
-</script>
-
-
+    const script = document.createElement("script");
+    script.src = isCreator ? "/host.js" : "/client.js";
+    script.async = true;
+    document.body.appendChild(script);
+  </script>
 </body>
 </html>
